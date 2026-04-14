@@ -79,6 +79,12 @@ else
   echo "Django installed successfully."
 fi
 
+# Fix PATH for user-installed pip packages
+if ! grep -q "$HOME/.local/bin" ~/.bashrc; then
+  echo 'export PATH=$PATH:$HOME/.local/bin' >> ~/.bashrc
+  echo "Added ~/.local/bin to PATH. Restart terminal or run: source ~/.bashrc"
+fi
+
 echo "=== Installation completed ==="
 echo "Installed versions:"
 docker --version || true
