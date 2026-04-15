@@ -33,6 +33,7 @@
 
 ## 📁 Структура проєкту
 
+```
 lesson-5/
 │
 ├── main.tf
@@ -44,6 +45,7 @@ lesson-5/
 │   ├── s3-backend/
 │   ├── vpc/
 │   └── ecr/
+```
 
 ---
 
@@ -55,6 +57,8 @@ lesson-5/
 
 * створення S3 bucket
 * увімкнення versioning
+* server-side encryption (AES256)
+* блокування публічного доступу
 * створення DynamoDB таблиці
 
 👉 Використовується як backend для Terraform
@@ -68,14 +72,14 @@ lesson-5/
 * VPC: `10.0.0.0/16`
 * Public subnets:
 
-  * 10.0.1.0/24
-  * 10.0.2.0/24
-  * 10.0.3.0/24
+  * `10.0.1.0/24`
+  * `10.0.2.0/24`
+  * `10.0.3.0/24`
 * Private subnets:
 
-  * 10.0.4.0/24
-  * 10.0.5.0/24
-  * 10.0.6.0/24
+  * `10.0.4.0/24`
+  * `10.0.5.0/24`
+  * `10.0.6.0/24`
 
 Також:
 
@@ -91,6 +95,8 @@ lesson-5/
 
 * ECR repository
 * автоматичне сканування образів
+* repository policy (доступ тільки для поточного AWS account)
+* lifecycle policy (зберігає лише останні 10 образів)
 
 ---
 
@@ -100,7 +106,7 @@ lesson-5/
 terraform {
   backend "s3" {
     bucket         = "serhii-terraform-state-lesson-5"
-    key            = "lesson-5/terraform.tfstate"
+    key            = "lesson-5-homework/terraform.tfstate"
     region         = "us-west-2"
     dynamodb_table = "terraform-locks"
     encrypt        = true
@@ -114,57 +120,62 @@ terraform {
 
 ### 1. Ініціалізація
 
-```
+```bash
 terraform init
 ```
 
 ### 2. Перевірка
 
-```
+```bash
 terraform validate
 ```
 
 ### 3. План
 
-```
+```bash
 terraform plan
 ```
 
 ### 4. Застосування
 
-```
+```bash
 terraform apply
 ```
 
 ---
 
 ## Outputs
-Після terraform apply виводяться:
-- S3 bucket name
-- DynamoDB table name
-- VPC ID
-- Public subnet IDs
-- Private subnet IDs
-- ECR repository URL
+
+Після `terraform apply` виводяться:
+
+* S3 bucket name
+* DynamoDB table name
+* VPC ID
+* Public subnet IDs
+* Private subnet IDs
+* ECR repository URL
 
 ---
 
 ## Input Variables
 
 ### s3-backend
-- `bucket_name` - name of the S3 bucket for Terraform state
-- `table_name` - name of the DynamoDB table for Terraform state locking
+
+* `bucket_name` - name of the S3 bucket for Terraform state
+* `table_name` - name of the DynamoDB table for Terraform state locking
 
 ### vpc
-- `vpc_cidr_block` - CIDR block for the VPC
-- `public_subnets` - list of CIDR blocks for public subnets
-- `private_subnets` - list of CIDR blocks for private subnets
-- `availability_zones` - list of AWS availability zones
-- `vpc_name` - name for VPC resources
+
+* `vpc_cidr_block` - CIDR block for the VPC
+* `public_subnets` - list of CIDR blocks for public subnets
+* `private_subnets` - list of CIDR blocks for private subnets
+* `availability_zones` - list of AWS availability zones
+* `vpc_name` - name for VPC resources
 
 ### ecr
-- `ecr_name` - name of the ECR repository
-- `scan_on_push` - enable automatic image scanning on push
+
+* `ecr_name` - name of the ECR repository
+* `scan_on_push` - enable automatic image scanning on push
 
 ---
 
@@ -182,18 +193,21 @@ vpc_name           = "lesson-5-vpc"
 
 ecr_name           = "lesson-5-ecr"
 scan_on_push       = true
+```
+
+---
 
 ## 🔒 Чому S3 + DynamoDB?
 
 Це best practice в Terraform:
 
 * S3 → централізоване зберігання state
-* DynamoDB → блокування (lock)
+* DynamoDB → блокування state
 
 👉 Запобігає:
 
 * конфліктам
-* одночасним apply
+* одночасним `apply`
 * пошкодженню state
 
 ---
@@ -202,12 +216,12 @@ scan_on_push       = true
 
 Деякі ресурси платні:
 
-* NAT Gateway ⚠️ (~30$/міс)
+* NAT Gateway ⚠️
 * Elastic IP
 
-👉 Після завершення ОБОВʼЯЗКОВО:
+👉 Після завершення перевірки ОБОВʼЯЗКОВО:
 
-```
+```bash
 terraform destroy
 ```
 
@@ -220,13 +234,14 @@ terraform destroy
 * AWS networking (VPC)
 * роботу з ECR
 * базову DevOps архітектуру
+* базові security practices
 
 ---
 
 ## 🔧 Можливі покращення
 
-* S3 bucket encryption (KMS)
-* IAM roles замість user
+* S3 encryption через KMS
+* IAM roles замість IAM user
 * Multi-AZ NAT Gateway
 * VPC endpoints
 * tagging strategy
@@ -244,7 +259,7 @@ terraform destroy
 
 Не забудь:
 
-```
+```bash
 terraform destroy
 ```
 
