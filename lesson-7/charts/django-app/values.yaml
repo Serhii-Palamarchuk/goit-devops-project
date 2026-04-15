@@ -1,0 +1,34 @@
+replicaCount: 2
+
+image:
+  repository: 493947253485.dkr.ecr.us-west-2.amazonaws.com/lesson-5-ecr
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8000
+
+config:
+  DEBUG: "True"
+  ALLOWED_HOSTS: "*"
+  DB_HOST: ""
+  DB_NAME: ""
+  DB_USER: ""
+  DB_PASSWORD: ""
+  DB_PORT: "5432"
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
