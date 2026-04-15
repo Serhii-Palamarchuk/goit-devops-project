@@ -138,18 +138,50 @@ terraform apply
 
 ---
 
-## 📤 Outputs
-
-Після виконання:
-
-* `s3_bucket_name`
-* `dynamodb_table_name`
-* `vpc_id`
-* `public_subnet_ids`
-* `private_subnet_ids`
-* `ecr_repository_url`
+## Outputs
+Після terraform apply виводяться:
+- S3 bucket name
+- DynamoDB table name
+- VPC ID
+- Public subnet IDs
+- Private subnet IDs
+- ECR repository URL
 
 ---
+
+## Input Variables
+
+### s3-backend
+- `bucket_name` - name of the S3 bucket for Terraform state
+- `table_name` - name of the DynamoDB table for Terraform state locking
+
+### vpc
+- `vpc_cidr_block` - CIDR block for the VPC
+- `public_subnets` - list of CIDR blocks for public subnets
+- `private_subnets` - list of CIDR blocks for private subnets
+- `availability_zones` - list of AWS availability zones
+- `vpc_name` - name for VPC resources
+
+### ecr
+- `ecr_name` - name of the ECR repository
+- `scan_on_push` - enable automatic image scanning on push
+
+---
+
+## Example terraform.tfvars
+
+```hcl
+bucket_name        = "serhii-terraform-state-lesson-5"
+table_name         = "terraform-locks"
+
+vpc_cidr_block     = "10.0.0.0/16"
+public_subnets     = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+private_subnets    = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
+availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
+vpc_name           = "lesson-5-vpc"
+
+ecr_name           = "lesson-5-ecr"
+scan_on_push       = true
 
 ## 🔒 Чому S3 + DynamoDB?
 
