@@ -26,7 +26,7 @@ module "ecr" {
 module "eks" {
   source       = "./modules/eks"
   cluster_name = "lesson-8-9-eks"
-  subnet_ids   = module.vpc.public_subnet_ids
+  subnet_ids   = module.vpc.private_subnet_ids
 }
 
 module "jenkins" {

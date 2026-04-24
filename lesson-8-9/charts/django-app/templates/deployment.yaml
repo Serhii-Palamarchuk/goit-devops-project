@@ -1,28 +1,30 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: django-app
+  name: {{ include "django-app.fullname" . }}
+  labels:
+    {{- include "django-app.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      app: django-app
+      {{- include "django-app.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: django-app
+        {{- include "django-app.selectorLabels" . | nindent 8 }}
     spec:
       containers:
-        - name: django-app
+        - name: {{ include "django-app.name" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.service.targetPort }}
           envFrom:
             - configMapRef:
-                name: django-app-config
+                name: {{ include "django-app.configMapName" . }}
           resources:
             requests:
               cpu: {{ .Values.resources.requests.cpu }}
