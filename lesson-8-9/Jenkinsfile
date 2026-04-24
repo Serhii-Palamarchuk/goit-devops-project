@@ -55,10 +55,6 @@ spec:
 
             git config --global --add safe.directory ${WORKSPACE}
 
-            pwd
-            ls -la
-            git status
-
             git config user.email "jenkins@example.com"
             git config user.name "Jenkins CI"
 
@@ -66,8 +62,16 @@ spec:
 
             git add lesson-8-9/charts/django-app/values.yaml
             git commit -m "Update image tag to ${IMAGE_TAG}" || echo "No changes to commit"
-            git push origin HEAD:main
           '''
+
+          withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_TOKEN')]) {
+            sh '''
+              cd ${WORKSPACE}
+
+              git remote set-url origin https://${GIT_USERNAME}:${GIT_TOKEN}@github.com/Serhii-Palamarchuk/goit-devops-project.git
+              git push origin HEAD:main
+            '''
+          }
         }
       }
     }
