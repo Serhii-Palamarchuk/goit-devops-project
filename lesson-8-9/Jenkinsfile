@@ -51,6 +51,8 @@ spec:
       steps {
         container('git') {
           sh '''
+            cd ${WORKSPACE}
+
             git config user.email "jenkins@example.com"
             git config user.name "Jenkins CI"
 
