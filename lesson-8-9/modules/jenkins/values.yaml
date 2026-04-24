@@ -1,0 +1,21 @@
+controller:
+  admin:
+    username: admin
+    password: admin123
+
+  serviceType: LoadBalancer
+
+  persistence:
+    enabled: true
+    storageClassName: gp3
+    size: 8Gi
+
+  installPlugins:
+    - kubernetes
+    - workflow-aggregator
+    - git
+    - configuration-as-code
+    - credentials-binding
+
+agent:
+  enabled: true

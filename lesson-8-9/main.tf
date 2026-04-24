@@ -14,17 +14,22 @@ module "vpc" {
   public_subnets     = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
   private_subnets    = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
   availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
-  vpc_name           = "lesson-5-vpc"
+  vpc_name           = "lesson-8-9-vpc"
 }
 
 module "ecr" {
   source       = "./modules/ecr"
-  ecr_name     = "lesson-5-ecr"
+  ecr_name     = "lesson-8-9-ecr"
   scan_on_push = true
 }
 
 module "eks" {
   source       = "./modules/eks"
-  cluster_name = "lesson-7-eks"
+  cluster_name = "lesson-8-9-eks"
   subnet_ids   = module.vpc.public_subnet_ids
+}
+
+module "jenkins" {
+  source = "./modules/jenkins"
+  cluster_name = module.eks.cluster_name
 }
