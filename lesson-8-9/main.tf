@@ -33,3 +33,9 @@ module "jenkins" {
   source = "./modules/jenkins"
   cluster_name = module.eks.cluster_name
 }
+
+module "argo_cd" {
+  source = "./modules/argo_cd"
+
+  cluster_name = module.eks.cluster_name
+}
