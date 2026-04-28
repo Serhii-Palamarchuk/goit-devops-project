@@ -17,6 +17,36 @@ module "vpc" {
   vpc_name           = "lesson-8-9-vpc"
 }
 
+module "rds" {
+  source = "./modules/rds"
+
+  name       = "lesson-db"
+  use_aurora = false
+
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnet_ids
+
+  allowed_cidr_blocks = ["10.0.0.0/16"]
+
+  db_name  = "appdb"
+  username = "dbadmin"
+  password = var.db_password
+
+  engine         = "postgres"
+  engine_version = "16.3"
+  instance_class = "db.t3.micro"
+
+  allocated_storage = 20
+  multi_az          = false
+
+  publicly_accessible = false
+
+  tags = {
+    Project = "lesson-db-module"
+    Managed = "terraform"
+  }
+}
+
 module "ecr" {
   source       = "./modules/ecr"
   ecr_name     = "lesson-8-9-ecr"
@@ -30,7 +60,7 @@ module "eks" {
 }
 
 module "jenkins" {
-  source = "./modules/jenkins"
+  source       = "./modules/jenkins"
   cluster_name = module.eks.cluster_name
 }
 

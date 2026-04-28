@@ -23,8 +23,8 @@ resource "kubernetes_storage_class_v1" "gp3" {
 }
 
 resource "helm_release" "jenkins" {
-  name       = "jenkins"
-  namespace  = kubernetes_namespace_v1.jenkins.metadata[0].name
+  name      = "jenkins"
+  namespace = kubernetes_namespace_v1.jenkins.metadata[0].name
 
   repository = "https://charts.jenkins.io"
   chart      = "jenkins"
