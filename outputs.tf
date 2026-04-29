@@ -64,3 +64,18 @@ output "db_identifier" {
   description = "Database identifier."
   value       = module.rds.db_identifier
 }
+
+output "monitoring_namespace" {
+  description = "Monitoring namespace."
+  value       = module.monitoring.namespace
+}
+
+output "grafana_service_name" {
+  description = "Grafana service name."
+  value       = module.monitoring.grafana_service_name
+}
+
+output "prometheus_service_name" {
+  description = "Prometheus service name."
+  value       = module.monitoring.prometheus_service_name
+}

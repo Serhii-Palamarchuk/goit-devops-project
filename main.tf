@@ -69,3 +69,9 @@ module "argo_cd" {
 
   cluster_name = module.eks.cluster_name
 }
+
+module "monitoring" {
+  source = "./modules/monitoring"
+
+  cluster_name = module.eks.cluster_name
+}
