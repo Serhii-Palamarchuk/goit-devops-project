@@ -11,7 +11,7 @@ service:
   targetPort: 8000
 
 config:
-  DEBUG: "True"
+  DEBUG: "False"
   ALLOWED_HOSTS: "*"
   DB_HOST: ""
   DB_NAME: ""
