@@ -859,3 +859,857 @@ terraform destroy
 * ECR images
 * RDS / Aurora databases
 * DB snapshots
+# 🚀 Final Project — DevOps Infrastructure on AWS
+
+## 📌 Опис проєкту
+
+Фінальний проєкт демонструє повну DevOps-інфраструктуру на AWS з використанням Terraform, Kubernetes, Helm, Jenkins, Argo CD, ECR, RDS, Prometheus та Grafana.
+
+Проєкт побудований на базі попередніх домашніх завдань курсу DevOps CI/CD і обʼєднує всі основні компоненти в одну робочу інфраструктуру.
+
+> Примітка: частина AWS-ресурсів зберігає префікс `lesson-8-9`, оскільки фінальний проєкт був розширений на базі вже розгорнутої інфраструктури попереднього ДЗ.
+
+---
+
+## ✅ Реалізовано
+
+- Terraform інфраструктура на AWS
+- Remote Terraform state в S3
+- State locking через DynamoDB
+- VPC з public/private subnets
+- ECR repository для Docker images
+- EKS cluster
+- Дві EKS managed node groups:
+  - `t3.small` node group
+  - додаткова `t3.medium` node group для Jenkins, Argo CD та monitoring stack
+- EBS CSI Driver для persistent volumes
+- Jenkins через Helm + Terraform
+- Jenkins Kubernetes Agent
+- Kaniko build без Docker daemon
+- Push Docker image в AWS ECR
+- Argo CD через Helm + Terraform
+- Argo CD Application для GitOps-деплою Django app
+- Django app у Kubernetes через Helm chart
+- HPA для Django app
+- RDS PostgreSQL у private subnets
+- Універсальний Terraform-модуль `rds` з підтримкою RDS або Aurora
+- Prometheus + Grafana monitoring через `kube-prometheus-stack`
+- Node Exporter, kube-state-metrics, Alertmanager
+- Перевірка доступності Jenkins, Argo CD, Prometheus та Grafana через port-forward
+
+---
+
+## 🔄 CI/CD flow
+
+```text
+GitHub → Jenkins → Kaniko → ECR → Helm values update → Argo CD → EKS → Django app
+```
+
+Окремо для інфраструктури:
+
+```text
+Terraform → AWS VPC / EKS / ECR / RDS → Helm releases → Kubernetes services
+```
+
+---
+
+## 🏗️ Архітектура
+
+### AWS / Terraform
+
+- **S3 Bucket** — зберігання Terraform state
+- **DynamoDB** — блокування Terraform state
+- **VPC `10.0.0.0/16`**
+  - 3 public subnets
+  - 3 private subnets
+  - Internet Gateway
+  - NAT Gateway
+- **ECR Repository** — зберігання Docker images
+- **EKS Cluster** — Kubernetes cluster
+- **Managed Node Groups**
+  - main node group: `t3.small`
+  - medium node group: `t3.medium`
+- **EBS CSI Driver** — persistent volumes для Kubernetes
+- **OIDC / IRSA** — IAM role для EBS CSI Driver
+- **RDS PostgreSQL**
+  - private subnets
+  - DB Subnet Group
+  - Security Group
+  - Parameter Group
+  - encrypted storage
+
+---
+
+### Kubernetes namespaces
+
+- **`jenkins`**
+  - Jenkins controller
+  - Jenkins agent service
+  - PVC через `gp3`
+
+- **`argocd`**
+  - Argo CD server
+  - Argo CD repo-server
+  - Argo CD application-controller
+  - Redis
+  - Dex
+  - notifications controller
+
+- **`django-app`**
+  - Django Deployment
+  - Django Service LoadBalancer
+  - HPA
+  - ConfigMap
+
+- **`monitoring`**
+  - Prometheus
+  - Grafana
+  - Alertmanager
+  - Prometheus Operator
+  - kube-state-metrics
+  - Prometheus Node Exporter
+
+---
+
+## 📁 Структура проєкту
+
+```text
+Project/
+│
+├── app/
+│   ├── Dockerfile
+│   ├── manage.py
+│   ├── requirements.txt
+│   └── mysite/
+│
+├── charts/
+│   └── django-app/
+│       ├── templates/
+│       │   ├── deployment.yaml
+│       │   ├── service.yaml
+│       │   ├── configmap.yaml
+│       │   └── hpa.yaml
+│       ├── Chart.yaml
+│       └── values.yaml
+│
+├── modules/
+│   ├── s3-backend/
+│   ├── vpc/
+│   ├── ecr/
+│   ├── eks/
+│   ├── jenkins/
+│   ├── argo_cd/
+│   ├── rds/
+│   └── monitoring/
+│       ├── monitoring.tf
+│       ├── providers.tf
+│       ├── variables.tf
+│       ├── outputs.tf
+│       └── values.yaml
+│
+├── Jenkinsfile
+├── backend.tf
+├── main.tf
+├── variables.tf
+├── outputs.tf
+└── README.md
+```
+
+---
+
+## 🧩 Terraform модулі
+
+### `s3-backend`
+
+Створює:
+
+- S3 bucket для Terraform state
+- versioning
+- server-side encryption
+- block public access
+- DynamoDB table для state locking
+
+---
+
+### `vpc`
+
+Створює:
+
+- VPC `10.0.0.0/16`
+- public subnets:
+  - `10.0.1.0/24`
+  - `10.0.2.0/24`
+  - `10.0.3.0/24`
+- private subnets:
+  - `10.0.4.0/24`
+  - `10.0.5.0/24`
+  - `10.0.6.0/24`
+- Internet Gateway
+- NAT Gateway
+- Route Tables
+
+---
+
+### `ecr`
+
+Створює:
+
+- ECR repository `lesson-8-9-ecr`
+- image scanning on push
+- repository policy
+- lifecycle policy для очищення старих images
+
+---
+
+### `eks`
+
+Створює:
+
+- EKS cluster `lesson-8-9-eks`
+- IAM role для EKS control plane
+- IAM role для worker nodes
+- managed node group `main` на `t3.small`
+- managed node group `medium` на `t3.medium`
+- EBS CSI Driver addon
+- OIDC provider
+- IRSA role для `ebs-csi-controller-sa`
+
+Додаткова `t3.medium` node group використовується для забезпечення достатньої кількості ресурсів для Jenkins, Argo CD та monitoring stack.
+
+---
+
+### `jenkins`
+
+Створює:
+
+- namespace `jenkins`
+- StorageClass `gp3`
+- Jenkins через Helm chart
+- LoadBalancer service
+- PVC для Jenkins controller
+
+---
+
+### `argo_cd`
+
+Створює:
+
+- namespace `argocd`
+- Argo CD через Helm chart
+- LoadBalancer service для Argo CD UI
+- Argo CD Application `django-app`
+- namespace `django-app`
+
+GitOps-конфігурація Argo CD Application описана у файлі:
+
+```text
+modules/argo_cd/application.tf
+```
+
+---
+
+### `rds`
+
+Універсальний Terraform-модуль для створення бази даних.
+
+Підтримує два режими:
+
+- `use_aurora = false` — створюється звичайна `aws_db_instance`
+- `use_aurora = true` — створюється `aws_rds_cluster` та cluster instances
+
+Модуль створює:
+
+- DB Subnet Group
+- Security Group
+- DB Parameter Group для звичайної RDS
+- RDS Cluster Parameter Group для Aurora
+
+Поточна конфігурація використовує PostgreSQL RDS:
+
+```hcl
+module "rds" {
+  source = "./modules/rds"
+
+  name       = "lesson-db"
+  use_aurora = false
+
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnet_ids
+
+  allowed_cidr_blocks = ["10.0.0.0/16"]
+
+  db_name  = "appdb"
+  username = "dbadmin"
+  password = var.db_password
+
+  engine         = "postgres"
+  engine_version = "16.13"
+  instance_class = "db.t3.micro"
+
+  allocated_storage   = 20
+  multi_az            = false
+  publicly_accessible = false
+}
+```
+
+---
+
+### `monitoring`
+
+Створює monitoring stack через Helm chart `kube-prometheus-stack`.
+
+Компоненти:
+
+- Prometheus
+- Grafana
+- Alertmanager
+- Prometheus Operator
+- kube-state-metrics
+- Prometheus Node Exporter
+
+Основні файли:
+
+```text
+modules/monitoring/
+├── monitoring.tf
+├── providers.tf
+├── variables.tf
+├── outputs.tf
+└── values.yaml
+```
+
+---
+
+## ⚙️ Terraform запуск
+
+### 1. Ініціалізація
+
+```bash
+terraform init
+```
+
+Після зміни backend або модулів:
+
+```bash
+terraform init -reconfigure
+```
+
+---
+
+### 2. Передача пароля для RDS
+
+Пароль бази даних не зберігається в коді.
+
+У Git Bash:
+
+```bash
+export TF_VAR_db_password='<your-secure-password>'
+```
+
+Або без збереження в shell history:
+
+```bash
+read -s TF_VAR_db_password
+export TF_VAR_db_password
+```
+
+---
+
+### 3. Перевірка
+
+```bash
+terraform fmt -recursive
+terraform validate
+terraform plan
+```
+
+Очікуваний фінальний результат:
+
+```text
+No changes. Your infrastructure matches the configuration.
+```
+
+---
+
+### 4. Застосування
+
+```bash
+terraform apply
+```
+
+---
+
+## ☸️ Підключення до EKS
+
+```bash
+aws eks update-kubeconfig --region us-west-2 --name lesson-8-9-eks
+kubectl get nodes
+```
+
+Очікувано:
+
+```text
+STATUS
+Ready
+```
+
+---
+
+## 🐳 Docker image build через Jenkins + Kaniko
+
+Pipeline описаний у файлі:
+
+```text
+Jenkinsfile
+```
+
+Jenkins pipeline виконує:
+
+1. Створює Kubernetes agent pod
+2. Запускає container `kaniko`
+3. Build Docker image з `app/Dockerfile`
+4. Push image в AWS ECR
+5. Оновлює image tag у Helm `values.yaml`
+6. Робить commit/push у GitHub
+7. Argo CD автоматично синхронізує застосунок
+
+ECR repository:
+
+```text
+493947253485.dkr.ecr.us-west-2.amazonaws.com/lesson-8-9-ecr
+```
+
+---
+
+## 🔐 Jenkins credentials
+
+Для push у GitHub використовується Jenkins credential:
+
+```text
+ID: github-token
+Kind: Username with password
+Username: Serhii-Palamarchuk
+Password: GitHub Personal Access Token
+```
+
+Для Kaniko використовується Kubernetes secret з Docker config для ECR:
+
+```bash
+kubectl create secret generic ecr-docker-config \
+  --from-file=config.json=/tmp/ecr-config.json \
+  -n jenkins
+```
+
+---
+
+## 🧪 Перевірка Jenkins
+
+```bash
+kubectl get all -n jenkins
+```
+
+Очікувано:
+
+```text
+pod/jenkins-0   2/2   Running
+```
+
+Port-forward:
+
+```bash
+kubectl port-forward svc/jenkins 8080:8080 -n jenkins
+```
+
+Відкрити:
+
+```text
+http://localhost:8080
+```
+
+---
+
+## 🚀 Перевірка Argo CD
+
+```bash
+kubectl get all -n argocd
+```
+
+Очікувано всі основні pod-и:
+
+```text
+Running
+```
+
+Port-forward:
+
+```bash
+kubectl port-forward svc/argocd-server 8081:443 -n argocd
+```
+
+Відкрити:
+
+```text
+https://localhost:8081
+```
+
+Отримати admin password:
+
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d
+```
+
+Логін:
+
+```text
+admin
+```
+
+---
+
+## 📦 Django app deployment
+
+Django app розгортається через Helm chart:
+
+```text
+charts/django-app
+```
+
+Перевірка Application:
+
+```bash
+kubectl get applications -n argocd
+```
+
+Перевірка pod-ів:
+
+```bash
+kubectl get pods -n django-app
+```
+
+Очікувано:
+
+```text
+django-app-...   1/1   Running
+django-app-...   1/1   Running
+```
+
+Перевірка service:
+
+```bash
+kubectl get svc -n django-app
+```
+
+Очікувано:
+
+```text
+django-app-service   LoadBalancer   ...   80:xxxxx/TCP
+```
+
+---
+
+## 📊 Monitoring: Prometheus + Grafana
+
+Monitoring встановлено через Terraform module:
+
+```text
+modules/monitoring
+```
+
+Helm chart:
+
+```text
+kube-prometheus-stack
+```
+
+Перевірка:
+
+```bash
+kubectl get all -n monitoring
+```
+
+Очікувано:
+
+- Grafana pod `Running`
+- Prometheus pod `Running`
+- Alertmanager pod `Running`
+- Prometheus Operator pod `Running`
+- Node Exporter DaemonSet: `5/5 Running`
+
+---
+
+### Grafana access
+
+```bash
+kubectl port-forward svc/monitoring-grafana 3000:80 -n monitoring
+```
+
+Відкрити:
+
+```text
+http://localhost:3000
+```
+
+Логін:
+
+```text
+admin
+```
+
+Пароль для demo-середовища заданий у:
+
+```text
+modules/monitoring/values.yaml
+```
+
+---
+
+### Prometheus access
+
+```bash
+kubectl port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090 -n monitoring
+```
+
+Відкрити:
+
+```text
+http://localhost:9090
+```
+
+---
+
+## ✅ Фінальна перевірка
+
+```bash
+terraform validate
+terraform plan
+kubectl get nodes
+kubectl get all -n jenkins
+kubectl get all -n argocd
+kubectl get all -n monitoring
+kubectl get all -n django-app
+```
+
+Очікуваний результат:
+
+```text
+Terraform validate: Success
+Terraform plan: No changes
+EKS nodes: Ready
+Jenkins: Running
+Argo CD: Running
+Monitoring: Running
+Django app: 2/2 Running
+```
+
+---
+
+## 🛠 Troubleshooting
+
+### Terraform просить `var.db_password`
+
+Причина: sensitive-змінна не встановлена в поточній shell-сесії.
+
+Рішення:
+
+```bash
+export TF_VAR_db_password='<your-secure-password>'
+terraform plan
+```
+
+---
+
+### Terraform state lock
+
+Якщо попередній Terraform процес аварійно завершився, може залишитися lock у DynamoDB.
+
+Перевірити, чи немає активного процесу Terraform:
+
+```bash
+powershell -Command "Get-Process terraform -ErrorAction SilentlyContinue"
+```
+
+Якщо процесу немає, зняти lock:
+
+```bash
+terraform force-unlock <LOCK_ID>
+```
+
+---
+
+### Jenkins PVC Pending
+
+Причина:
+
+```text
+no storage class is set
+```
+
+Рішення:
+
+- встановити EBS CSI Driver
+- створити StorageClass `gp3`
+- зробити `gp3` default StorageClass
+
+---
+
+### EBS CSI Driver CrashLoopBackOff
+
+Причина:
+
+```text
+no EC2 IMDS role found
+```
+
+Рішення:
+
+- додати OIDC provider
+- створити IRSA IAM role
+- привʼязати `AmazonEBSCSIDriverPolicy`
+- передати `service_account_role_arn` в `aws_eks_addon`
+
+---
+
+### Monitoring pods Pending
+
+Причина: не вистачає capacity у worker nodes.
+
+Рішення, використане в проєкті:
+
+- додано додаткову EKS node group на `t3.medium`
+- залишено `prometheus-node-exporter` увімкненим
+- перевірено DaemonSet `monitoring-prometheus-node-exporter`: `5/5 Running`
+
+---
+
+### Kaniko не пушить в ECR
+
+Помилка:
+
+```text
+docker-credential-desktop: executable file not found
+```
+
+Причина: Kubernetes secret був створений з Docker Desktop config, де використовується `credsStore`.
+
+Рішення:
+
+- створити чистий `/tmp/ecr-config.json` з auth token
+- перестворити secret `ecr-docker-config`
+
+---
+
+### Git push з Jenkins не працює
+
+Помилка:
+
+```text
+could not read Username for 'https://github.com'
+```
+
+Рішення:
+
+- створити GitHub Personal Access Token
+- додати Jenkins credential `github-token`
+- використати `withCredentials` у Jenkinsfile
+
+---
+
+## 💸 Вартість
+
+Платні ресурси:
+
+- EKS Cluster
+- EC2 worker nodes: `t3.small` та `t3.medium`
+- NAT Gateway
+- LoadBalancers
+- EBS volume для Jenkins PVC
+- ECR storage
+- RDS instance
+- RDS storage та backups
+
+Після завершення перевірки обовʼязково видалити ресурси:
+
+```bash
+terraform destroy
+```
+
+Після `terraform destroy` бажано перевірити AWS Console:
+
+- EC2 Load Balancers
+- EC2 Instances
+- EBS Volumes
+- NAT Gateways
+- EKS
+- ECR
+- S3
+- DynamoDB
+- RDS
+- DB snapshots
+
+---
+
+## 🧠 Lessons Learned
+
+- Jenkins Helm chart потребує persistent storage
+- Для PVC в EKS потрібен EBS CSI Driver
+- Для EBS CSI краще використовувати IRSA
+- Kaniko дозволяє збирати Docker images без Docker daemon
+- Jenkins відповідає за CI
+- Argo CD відповідає за CD
+- Git є source of truth для GitOps
+- Prometheus і Grafana забезпечують monitoring Kubernetes stack
+- Node Exporter потрібен для збору node-level metrics
+- Для важкого monitoring stack потрібна достатня EKS capacity
+- LoadBalancer service створює AWS ELB і може генерувати витрати
+- Terraform-модулі краще робити універсальними та багаторазовими
+- Паролі та секрети не потрібно зберігати в Terraform-коді або README
+
+---
+
+## 🔧 Можливі покращення
+
+- Ingress замість окремих LoadBalancer service
+- TLS через cert-manager
+- External Secrets або AWS Secrets Manager
+- Окремий GitOps repository
+- Argo CD Image Updater замість commit з Jenkins
+- Slack/Email notifications для Jenkins або Argo CD
+- Обмеження доступу до Jenkins і Argo CD через security groups / ingress rules
+- Оптимізація кількості worker nodes після демонстрації
+
+---
+
+## 📌 Висновок
+
+У межах фінального проєкту реалізовано повний DevOps CI/CD процес на AWS:
+
+```text
+Terraform → AWS Infrastructure → EKS → Jenkins → ECR → Argo CD → Django app → Prometheus/Grafana
+```
+
+Jenkins автоматично збирає Docker image Django застосунку та пушить його в ECR. Argo CD відповідає за GitOps-деплой застосунку в Kubernetes. Prometheus і Grafana забезпечують моніторинг Kubernetes-кластера та застосунків.
+
+Інфраструктура описана через Terraform-модулі та успішно проходить перевірку `terraform plan` без змін.
+
+---
+
+## ⚠️ Cleanup
+
+Щоб уникнути AWS-витрат, після перевірки потрібно видалити ресурси:
+
+```bash
+terraform destroy
+```
+
+Після цього перевірити, що не залишились:
+
+- LoadBalancers
+- EBS volumes
+- NAT Gateway
+- EKS cluster
+- EC2 instances
+- ECR images
+- RDS database
+- DB snapshots
+- S3 bucket / DynamoDB table, якщо вони теж керуються цим Terraform state
