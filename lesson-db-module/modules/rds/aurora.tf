@@ -44,3 +44,21 @@ resource "aws_rds_cluster_instance" "writer" {
     Name = "${var.name}-aurora-writer"
   })
 }
+
+resource "aws_rds_cluster_instance" "reader" {
+  count = var.use_aurora ? var.aurora_reader_count : 0
+
+  identifier         = "${var.name}-aurora-reader-${count.index}"
+  cluster_identifier = aws_rds_cluster.this[0].id
+
+  engine         = aws_rds_cluster.this[0].engine
+  engine_version = aws_rds_cluster.this[0].engine_version
+  instance_class = var.instance_class
+
+  db_subnet_group_name = aws_db_subnet_group.this.name
+  publicly_accessible  = var.publicly_accessible
+
+  tags = merge(var.tags, {
+    Name = "${var.name}-aurora-reader-${count.index}"
+  })
+}

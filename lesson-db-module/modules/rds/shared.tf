@@ -10,7 +10,7 @@ locals {
 
   postgres_parameters = {
     max_connections = "100"
-    log_statement   = "all"
+    log_statement   = "ddl"
     work_mem        = "4096"
   }
 

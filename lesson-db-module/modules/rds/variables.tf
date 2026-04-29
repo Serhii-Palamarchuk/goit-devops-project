@@ -105,3 +105,9 @@ variable "tags" {
     Project = "lesson-db-module"
   }
 }
+
+variable "aurora_reader_count" {
+  description = "Number of Aurora read replicas (readers)."
+  type        = number
+  default     = 1
+}
