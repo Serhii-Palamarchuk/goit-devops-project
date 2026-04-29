@@ -67,8 +67,9 @@ resource "aws_db_parameter_group" "this" {
     for_each = local.selected_parameters
 
     content {
-      name  = parameter.key
-      value = parameter.value
+      name         = parameter.key
+      value        = parameter.value
+      apply_method = parameter.key == "max_connections" ? "pending-reboot" : "immediate"
     }
   }
 

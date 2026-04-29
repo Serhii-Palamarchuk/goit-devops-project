@@ -261,7 +261,7 @@ module "rds" {
   password = var.db_password
 
   engine         = "postgres"
-  engine_version = "16.3"
+  engine_version = "16.13"
   instance_class = "db.t3.micro"
 
   allocated_storage = 20
@@ -306,7 +306,7 @@ module "rds" {
 ```hcl
 use_aurora     = false
 engine         = "postgres"
-engine_version = "16.3"
+engine_version = "16.13"
 instance_class = "db.t3.micro"
 ```
 
@@ -324,7 +324,7 @@ Aurora PostgreSQL:
 ```hcl
 use_aurora     = true
 engine         = "aurora-postgresql"
-engine_version = "16.3"
+engine_version = "16.13"
 instance_class = "db.r6g.large"
 ```
 

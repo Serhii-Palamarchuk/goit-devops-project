@@ -33,7 +33,7 @@ module "rds" {
   password = var.db_password
 
   engine         = "postgres"
-  engine_version = "16.3"
+  engine_version = "16.13"
   instance_class = "db.t3.micro"
 
   allocated_storage = 20
